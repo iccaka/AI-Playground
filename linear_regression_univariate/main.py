@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pylab
 
 a = 0.001
 iter = 100000
@@ -62,7 +63,7 @@ def visualize_hypothesis():
 
 
 def visualize_training_examples():
-    plt.scatter(x, y, 'x')
+    plt.plot(x, y, 'x')
     plt.xlabel('Area (feet^2)')
     plt.ylabel('Price ($1000s)')
     plt.show()
