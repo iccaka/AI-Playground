@@ -55,14 +55,14 @@ def hypothesis(_x):
 
 def visualize_hypothesis():
     plt.plot(x, y, 'x')
-    plt.plot(x, w * x + w)
+    plt.plot(x, hypothesis(x))
     plt.xlabel('Area (feet^2)')
     plt.ylabel('Price ($1000s)')
     plt.show()
 
 
 def visualize_training_examples():
-    plt.scatter(x, y)
+    plt.scatter(x, y, 'x')
     plt.xlabel('Area (feet^2)')
     plt.ylabel('Price ($1000s)')
     plt.show()
@@ -71,10 +71,8 @@ def visualize_training_examples():
 if __name__ == '__main__':
     print(w, b)
 
-    visualize_training_examples()
-
     for i in range(iter):
         train()
-        print(w, b)
 
+    print(w, b)
     visualize_hypothesis()
