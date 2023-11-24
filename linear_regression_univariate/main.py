@@ -1,9 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pylab
 
-a = 0.001
-iter = 100000
+a = 0.01
+iter = 100
 x = np.array([0.5, 1.0, 2.0, 3, 1.5, 3.8])
 y = np.array([200, 300.0, 500.0, 750.0, 450, 770])
 m = len(x)
@@ -69,11 +68,18 @@ def visualize_training_examples():
     plt.show()
 
 
+def visualize_cost(cost):
+    plt.plot(cost)
+    plt.show()
+
+
 if __name__ == '__main__':
-    print(w, b)
+    cost_hist = []
 
     for i in range(iter):
+        cost_hist.append(cost_func())
         train()
 
     print(w, b)
     visualize_hypothesis()
+    visualize_cost(cost_hist)
