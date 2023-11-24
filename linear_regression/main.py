@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import pylab
 
 a = 0.001
 iter = 100
