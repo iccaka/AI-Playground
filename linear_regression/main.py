@@ -3,23 +3,22 @@ import matplotlib.pyplot as plt
 
 a = 0.001
 iter = 100
-size = np.array([2.1, 1.6, 2.4, 1.4, 1.5, 0.8, 3])  # kinda work
-num_of_bedrooms = np.array([3, 3, 3, 2, 3, 2, 4])
+x1 = np.array([2.1, 1.6, 2.4, 1.4, 1.5, 0.8, 3])
+x2 = np.array([3, 3, 3, 2, 3, 2, 4])
 y = np.array([400, 330, 369, 232, 315, 178, 540])
-n = 3
-input_x = np.vstack((np.ones(shape=len(size), dtype=int), size, num_of_bedrooms)).T
-m = len(input_x)
+input_x = np.vstack((np.ones(shape=len(x1), dtype=int), x1, x2)).T
+m, n = input_x.shape
 params = np.zeros(shape=n, dtype=object)
 
 """
 a - learning rate
 iter - iterations
-x - inputs
+x1, x2 - features
 y - target values
 n - # of features
-input_x - matrix containing all training examples
-m - # of rows in input_X
-params - parameters(θ1, θ2,..., θn)
+m - # of training examples
+input_x - matrix containing all training examples of size (m, n)
+params - parameters(θ1, θ2, ..., θn)
 """
 
 
