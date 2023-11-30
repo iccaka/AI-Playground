@@ -1,16 +1,26 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-a = 0.001
-iter = 1000
+a = 0.01
+iter = 10000
 x1 = np.array([1, 1.5, 1, 0.5, 0.5, 1, 2, 1.5, 0.6, 1.7])
 x2 = np.array([0.8, 1, 2, 1.5, 2, 1, 1.5, 0.5, 0.5, 1.1])
 y = np.array([0, 1, 1, 0, 0, 0, 1, 0, 0, 1])
-n = 2
 input_x = np.vstack((x1, x2)).T
-m = len(input_x)
+m, n = input_x.shape
 w = np.zeros((n,))
 b = 0
+
+"""
+a - learning rate
+iter - iterations
+x1, x2 - features
+y - target values
+n - # of features
+m - # of training examples
+input_x - matrix containing all training examples of size (m, n)
+w, b - parameters
+"""
 
 
 def train():
@@ -35,6 +45,15 @@ def gradient():
     return (dj_dw / m), (dj_db / m)
 
 
+def cost_func():
+    total = 0
+
+    for i in range(m):
+        total += -(y[i] * np.log(hypothesis(input_x[i]))) + (1 - y[i]) * (np.log(1 - hypothesis(input_x[i])))
+
+    return (1 / m) * total
+
+
 def hypothesis(_x):
     return sigmoid(np.dot(w, _x) + b)
 
@@ -44,19 +63,37 @@ def sigmoid(z):
 
 
 def visualize_training_examples():
-    ax = plt.axes(projection='3d')
-    ax.scatter(x1, y, x2)
+    colors = ['red' if i == 1 else 'blue' for i in y]
+
+    # 3D
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(x1, x2, y, marker='x', c=colors)
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    ax.set_zlabel('y')
+    plt.show()
+
+    # 2D
+    fig, ax = plt.subplots()
+    plt.scatter(x1, x2, marker='x', c=colors)
+    plt.xlabel('x1')
+    plt.ylabel('x2')
+    plt.show()
+
+
+def visualize_cost(cost):
+    plt.plot(cost)
     plt.show()
 
 
 if __name__ == '__main__':
-    # visualize_training_examples()
+    visualize_training_examples()
+    cost_hist = []
 
     for i in range(iter):
+        cost_hist.append(cost_func())
         train()
 
-    # plt.scatter(x1, y)
-    # plt.show()
-
-    plt.plot(input_x.T[0], hypothesis(input_x.T))
-    plt.show()
+    print(w)
+    visualize_cost(cost_hist)
