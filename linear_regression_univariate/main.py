@@ -12,9 +12,9 @@ b = 0
 """
 a - learning rate
 iter - iterations
-x - inputs
+x - feature
 y - target values
-m - number of training examples
+m - # of training examples
 w, b - parameters
 """
 
@@ -61,13 +61,6 @@ def visualize_hypothesis():
     plt.show()
 
 
-def visualize_training_examples():
-    plt.plot(x, y, 'x')
-    plt.xlabel('Area (feet^2)')
-    plt.ylabel('Price ($1000s)')
-    plt.show()
-
-
 def visualize_cost(cost):
     plt.plot(cost)
     plt.show()
@@ -81,5 +74,5 @@ if __name__ == '__main__':
         train()
 
     print(w, b)
-    visualize_hypothesis()
     visualize_cost(cost_hist)
+    visualize_hypothesis()
