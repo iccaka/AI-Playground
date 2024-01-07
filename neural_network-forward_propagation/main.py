@@ -27,7 +27,6 @@ W1, b2, W2, b2 - parameters
 """
 
 
-
 def sequential(a0, _W1, _b1, _W2, _b2, _dense):
     a1 = _dense(a0, _W1, _b2)
     return _dense(a1, _W2, _b2)
@@ -48,7 +47,6 @@ def hypothesis(w, x, b):
 def visualize_training_examples():
     colors = ['red' if i == 1 else 'blue' for i in y]
 
-    # fig, ax = plt.subplots()
     plt.scatter(x1, x2, marker='x', c=colors)
     plt.xlabel('x1')
     plt.ylabel('x2')
