@@ -16,13 +16,13 @@ iter_per_k_means = 20
 
 """
 params for make_blobs():
-n_samples - number of data points
-n_features - number of features
-n_blobs - number of clusters (blobs)
-cluster_std - standard deviation of the clusters (blobs)
-seed - random seed
-X - training data (output of make_blobs())
-X_unique - unique data points
+    n_samples - number of data points
+    n_features - number of features
+    n_blobs - number of clusters (blobs)
+    cluster_std - standard deviation of the clusters (blobs)
+    seed - random seed
+    X - training data (output of make_blobs())
+    X_unique - unique data points
 
 k - number of clusters
 iter - number of iterations
