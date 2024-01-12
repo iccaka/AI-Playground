@@ -48,7 +48,7 @@ def choose_initial_centroids():
     return result
 
 
-def indexes_to_closest_centroids(centroids):
+def indexes_to_closest_centroid(centroids):
     result = np.zeros(shape=(n_samples, ))
 
     for i in range(n_samples):
@@ -97,7 +97,7 @@ if __name__ == '__main__':
         initial_cost = 0
 
         for j in range(iter_per_k_means):
-            distances = indexes_to_closest_centroids(centroids)
+            distances = indexes_to_closest_centroid(centroids)
             centroids = recompute_centroids(distances)
 
         costs[i] = compute_distortion_function(centroids, distances)
