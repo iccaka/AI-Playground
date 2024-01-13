@@ -31,7 +31,6 @@ iter_per_k_means - number of iterations per k-means
 
 
 def visualize_clusters(centroids, distances=None):
-    global count
     plt.scatter(X[:, 0], X[:, 1], c=distances)
     plt.xlabel('x1')
     plt.ylabel('x2')
@@ -68,7 +67,7 @@ def recompute_centroids(distances):
     for i in range(k):
         points_that_belong = X[distances == i]
 
-        if len(points_that_belong) == 0:
+        if not points_that_belong:
             new_centroids[i] = X[randrange(0, n_samples)]
             continue
 
