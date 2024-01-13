@@ -67,7 +67,7 @@ def recompute_centroids(distances):
     for i in range(k):
         points_that_belong = X[distances == i]
 
-        if not points_that_belong:
+        if len(points_that_belong) == 0:
             new_centroids[i] = X[randrange(0, n_samples)]
             continue
 
