@@ -36,15 +36,14 @@ class Layer:
             print('The weights are not initialized. Please run build() on your model before calling.')
             return []
 
-        ws = np.zeros(shape=(len(self.units), self.units[0].W.shape[1]))
-        bs = np.zeros(shape=(self.units[0].W.shape[1], ))
+        w = np.zeros(shape=(self.units[0].W.shape[0], len(self.units)))
+        b = np.zeros(shape=(len(self.units), ))
 
         for i in range(len(self.units)):
-            # ws[i] = self.units[i].W
-            # bs[i] = self.units[i].b
-            ws[i], bs[i] = self.units[i].get_weights()
+            w[:, i], b[i] = self.units[i].get_weights()
 
-        return ws, bs
+        return w, b
 
     def set_weights(self, _w, _b):
-
+        for i in range(len(self.units)):
+            self.units[i].set_weights(_w[:, i], _b[i])

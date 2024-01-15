@@ -1,10 +1,13 @@
 import numpy as np
+import random
 import matplotlib.pyplot as plt
-
 from neural_network.layer import Layer
 from neural_network.model import Model
 
-x = np.array([[1, 2, 3]])
+m = 200
+x1 = np.array([random.uniform(175, 260) for _ in range(m)])
+x2 = np.array([random.uniform(12, 15) for _ in range(m)])
+X = np.vstack((x1, x2)).T
 y = np.array([1, 0, 1])
 
 if __name__ == '__main__':
@@ -16,9 +19,10 @@ if __name__ == '__main__':
     ])
 
     model.summary()
-    l1 = model.get_layer('layer_1')
-    print(l1.get_weights())
-    # model.get_layer(name='layer_1').get_weights()
-    # model.fit(x, y, 100)
-    # w, b = model.get_layer(0).get_weights()
-    # print(w, b)
+    l1 = model.get_layer(position=0)
+    model.fit(X, y, epochs=100)
+
+    weights = model.get_weights()
+    for i in range(0, len(weights), 2):
+        print(weights[i].shape, weights[i+1].shape)
+        print('=================================')
