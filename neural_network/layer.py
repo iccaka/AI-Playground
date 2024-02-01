@@ -12,6 +12,7 @@ class Layer:
 
         self.name = name
 
+        # TODO no need for a try-except i think
         try:
             if activation == 'linear':
                 self.activation = self.linear
