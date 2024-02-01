@@ -21,9 +21,9 @@ params for make_blobs():
     n_blobs - number of clusters (blobs)
     cluster_std - standard deviation of the clusters (blobs)
     seed - random seed
-    X - training data (output of make_blobs())
-    X_unique - unique data points
-
+    
+X - training data (output of make_blobs())
+X_unique - unique data points
 k - number of clusters
 iter - number of iterations
 iter_per_k_means - number of iterations per k-means
