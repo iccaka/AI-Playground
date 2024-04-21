@@ -1,7 +1,7 @@
 # AI Playground
 
-*A repository containing my implementations of some ML algorithms. The code was written during my time attending Andrew
-Ng's Coursera specialization 
+*A repository containing my implementations of some ML algorithms. The initial part of the codebase was written during my time attending Andrew
+Ng's Coursera specialization: 
 [Machine Learning Specialization](https://www.coursera.org/specializations/machine-learning-introduction)*
 
 ## Authors
