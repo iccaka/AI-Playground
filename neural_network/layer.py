@@ -10,9 +10,11 @@ class Layer:
         for unit in range(unit_count):
             self.units.append(Neuron())
 
+        self.unit_count = unit_count
         self.name = name
 
         # TODO no need for a try-except i think
+        # TODO make a dict filled with methods?
         try:
             if activation == 'linear':
                 self.activation = self.linear
@@ -20,8 +22,8 @@ class Layer:
                 self.activation = self.sigmoid
             elif activation == 'relu':
                 self.activation = self.relu
-        except:
-            print("There's no such activation function.")
+        except Exception:
+            raise ValueError('No such activation function.')
 
     def linear(self, _z):
         return _z
@@ -46,5 +48,6 @@ class Layer:
         return w, b
 
     def set_weights(self, _w, _b):
-        for i in range(len(self.units)):
-            self.units[i].set_weights(_w[:, i], _b[i])
+        # TODO vectorized?
+        for i, unit in enumerate(self.units):
+            unit.set_weights(_w[i, :], _b[i])

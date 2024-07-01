@@ -1,16 +1,22 @@
-import numpy as np
-import random
-import matplotlib.pyplot as plt
+from keras.datasets import mnist
 from neural_network.layer import Layer
 from neural_network.model import Model
 
-m = 200
-x1 = np.array([random.uniform(175, 260) for _ in range(m)])
-x2 = np.array([random.uniform(12, 15) for _ in range(m)])
-X = np.vstack((x1, x2)).T
-y = np.array([1, 0, 1])
 
 if __name__ == '__main__':
+    """
+    train_X: (60000, 28, 28)
+    train_y: (60000,)
+    test_X:  (10000, 28, 28)
+    test_y:  (10000,)
+    
+    train_X_flatten: (60000, 784)
+    test_X_flatten: (10000, 784)
+    """
+    (train_X, train_y), (test_X, test_y) = mnist.load_data()
+    train_X_flatten = train_X.reshape(train_X.shape[0], -1)
+    test_X_flatten = test_X.reshape(test_X.shape[0], -1)
+
     model = Model([
         Layer(25, activation='relu'),
         Layer(15, activation='relu'),
@@ -19,10 +25,9 @@ if __name__ == '__main__':
     ])
 
     model.summary()
-    l1 = model.get_layer(position=0)
-    model.fit(X, y, epochs=100)
+    model.fit(train_X_flatten, train_y, epochs=100)
 
     weights = model.get_weights()
     for i in range(0, len(weights), 2):
-        print(weights[i].shape, weights[i+1].shape)
+        print('w:', weights[i].shape, 'b:', weights[i+1].shape)
         print('=================================')
