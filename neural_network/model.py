@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.typing import NDArray
 from typing import Sequence
 
 from neural_network.layer import Layer
