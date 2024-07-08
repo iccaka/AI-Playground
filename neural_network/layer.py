@@ -13,37 +13,56 @@ class Layer:
         self.unit_count = unit_count
         self.name = name
 
-        # TODO no need for a try-except i think
         # TODO make a dict filled with methods?
-        try:
-            if activation == 'linear':
-                self.activation = self.linear
-            elif activation == 'sigmoid':
-                self.activation = self.sigmoid
-            elif activation == 'relu':
-                self.activation = self.relu
-        except Exception:
+        if activation == 'linear':
+            self.activation = self.linear
+        elif activation == 'sigmoid':
+            self.activation = self.sigmoid
+        elif activation == 'tanh':
+            self.activation = self.tanh
+        elif activation == 'softmax':
+            self.activation = self.softmax
+        elif activation == 'relu':
+            self.activation = self.relu
+        else:
             raise ValueError('No such activation function.')
 
-    def linear(self, _z):
-        return _z
+    # TODO move function definitions to a separate class/file?
+    # TODO derivative calculation in a separate class/file?
+    # TODO static?
+    # TODO add Leaky ReLU and PReLU
+    @staticmethod
+    def linear_transform(_W, _b, A):
+        return np.matmul(_W, A) + _b
 
-    def sigmoid(self, _z):
-        return 1 / (1 + np.exp(-_z))
+    def linear(self, _Z):
+        return _Z
 
-    def relu(self, _z):
-        return np.maximum(0, _z)
+    def sigmoid(self, _Z):
+        return 1 / (1 + np.exp(-_Z))
+
+    def tanh(self, _Z):
+        return (np.exp(_Z) - np.exp(-_Z)) / (np.exp(_Z) + np.exp(-_Z))
+
+    def softmax(self, _Z):
+        return np.exp(_Z) / np.sum(np.exp(_Z))
+
+    def relu(self, _Z):
+        return np.maximum(0, _Z)
 
     def get_weights(self):
         if self.units[0].W is None and self.units[0].b is None:
             print('The weights are not initialized. Please run build() on your model before calling.')
             return []
 
-        w = np.zeros(shape=(self.units[0].W.shape[0], len(self.units)))
-        b = np.zeros(shape=(len(self.units), ))
+        w = np.zeros(shape=(self.unit_count, self.units[0].W.shape[0]))
+        b = np.zeros(shape=(self.unit_count, 1))
 
-        for i in range(len(self.units)):
-            w[:, i], b[i] = self.units[i].get_weights()
+        # for i in range(len(self.units)):
+        #     w[i, :], b[i] = self.units[i].get_weights()
+
+        for i, unit in enumerate(self.units):
+            w[i, :], b[i] = unit.get_weights()
 
         return w, b
 
