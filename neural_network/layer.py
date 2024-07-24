@@ -12,6 +12,7 @@ class Layer:
 
         self.unit_count = unit_count
         self.name = name
+        self.param_count = 0
 
         # TODO make a dict filled with methods?
         if activation == 'linear':
@@ -29,11 +30,10 @@ class Layer:
 
     # TODO move function definitions to a separate class/file?
     # TODO derivative calculation in a separate class/file?
-    # TODO static?
     # TODO add Leaky ReLU and PReLU
     @staticmethod
     def linear_transform(_W, _b, A):
-        return np.matmul(_W, A) + _b
+        return np.matmul(A, _W.T) + _b
 
     def linear(self, _Z):
         return _Z
@@ -58,15 +58,14 @@ class Layer:
         w = np.zeros(shape=(self.unit_count, self.units[0].W.shape[0]))
         b = np.zeros(shape=(self.unit_count, 1))
 
-        # for i in range(len(self.units)):
-        #     w[i, :], b[i] = self.units[i].get_weights()
-
         for i, unit in enumerate(self.units):
             w[i, :], b[i] = unit.get_weights()
 
         return w, b
 
-    def set_weights(self, _w, _b):
-        # TODO vectorized?
+    def set_weights(self, _W, _b):
+        # TODO check if shape matches
+        self.param_count = (_W.shape[1] * self.unit_count) + _b.shape[0]
+
         for i, unit in enumerate(self.units):
-            unit.set_weights(_w[i, :], _b[i])
+            unit.set_weights(_W[i, :], _b[i])

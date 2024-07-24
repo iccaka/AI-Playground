@@ -6,6 +6,7 @@ from neural_network.layer import Layer
 
 class Model:
     def __init__(self, layers: Sequence[Layer]):
+        # TODO maybe use dict here for better code in get_layer()
         self.layers = np.array(layers)
         self.are_weights_initialized = False
 
@@ -14,21 +15,27 @@ class Model:
                 layer.name = 'layer_{}'.format(str(i + 1))
 
     def summary(self):
-        # TODO add weight count for each layer
-        # TODO add total weights count
         if self.are_weights_initialized:
             weights = self.get_weights()
+            total_param_count = 0
 
             for i in range(0, len(weights), 2):
                 layer = self.layers[int(i / 2)]
+                total_param_count += layer.param_count
 
-                print('Name: {} / Units: {} / Activation: {}\n\tw: {} / b: {}'.format(
-                    layer.name,
-                    layer.unit_count,
-                    layer.activation.__name__,
-                    weights[i].shape,
-                    weights[i + 1].shape
+                print('Name: {} / Units: {} / Activation: {}\n'
+                      '\t# of params: {}\n'
+                      '\tw: {} / b: {}'.format(
+                        layer.name,
+                        layer.unit_count,
+                        layer.activation.__name__,
+                        layer.param_count,
+                        weights[i].shape,
+                        weights[i + 1].shape
                 ))
+
+            print('=================================================================\n'
+                  'Total params: {}'.format(total_param_count))
         else:
             for layer in self.layers:
                 print('Name: {} / Units: {} / Activation: {}'.format(
@@ -54,7 +61,9 @@ class Model:
             raise ValueError('No layer with such name found:', name)
 
     def get_weights(self):
-        # TODO make it using np.zeros and fill it?
+        if not self.are_weights_initialized:
+            raise ValueError('Weights are not initialized. To do so run either fit() or build().')
+
         weights = []
 
         for layer in self.layers:
@@ -65,8 +74,7 @@ class Model:
         return weights
 
     def set_weights(self, weights):
-        # TODO check if they are the same size
-
+        # TODO check if the new weights' shape match the current ones' shape
         for i in range(0, len(weights), 2):
             w = weights[i]
             b = weights[i + 1]
@@ -74,36 +82,33 @@ class Model:
 
     def build(self, input_shape, initializer='xavier'):
         # TODO add xavier and he initialization
-
-        w_1 = np.random.randn(self.layers[0].unit_count, input_shape[0])
-        # TODO second dimension for b_1 = 1 instead of this?
+        # TODO no need for these 2 variables to be called W/b_1 (can be W/b_i)
+        W_1 = np.random.randn(self.layers[0].unit_count, input_shape[1])
         b_1 = np.random.randn(self.layers[0].unit_count, 1)
-        self.layers[0].set_weights(w_1, b_1)
+        self.layers[0].set_weights(W_1, b_1)
 
         for i, layer in enumerate(self.layers[1:], start=0):
-            w_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
-            # TODO second dimension for b_i = 1 instead of this?
+            W_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
             b_i = np.random.randn(layer.unit_count, 1)
-            layer.set_weights(w_i, b_i)
+            layer.set_weights(W_i, b_i)
 
         self.are_weights_initialized = True
 
+    # TODO finish configure
     def configure(self):
         pass
 
     def fit(self, x, y, epochs):
-        if not self.are_weights_initialized:
-            self.build(x.shape)
-
-        A = x
+        # TODO vectorized implementation instead of doing it layer by layer
+        # TODO check if input dimensions match for forward prop
         # TODO forward prop in a separate function
         # TODO add cache for use during back prop
         # TODO back prop
-        for layer in self.layers:
-            # TODO check if input dimensions match for forward prop
-            Z = Layer.linear_transform(*layer.get_weights(), A)
-            A = layer.activation(Z)
+        if not self.are_weights_initialized:
+            self.build(x.shape)
 
-    # TODO finish predict
-    def predict(self):
-        pass
+        # A = x
+        # for i in range(epochs):
+        #     for layer in self.layers:
+        #         Z = Layer.linear_transform(*layer.get_weights(), A)
+        #         A = layer.activation(Z)
