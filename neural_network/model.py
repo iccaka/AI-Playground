@@ -80,12 +80,11 @@ class Model:
             b = weights[i + 1]
             self.layers[int(i / 2)].set_weights(w, b)
 
-    def build(self, input_shape, initializer='xavier'):
+    def build(self, input_shape):
         # TODO add xavier and he initialization
-        # TODO no need for these 2 variables to be called W/b_1 (can be W/b_i)
-        W_1 = np.random.randn(self.layers[0].unit_count, input_shape[1])
-        b_1 = np.random.randn(self.layers[0].unit_count, 1)
-        self.layers[0].set_weights(W_1, b_1)
+        W_i = np.random.randn(self.layers[0].unit_count, input_shape[1])
+        b_i = np.random.randn(self.layers[0].unit_count, 1)
+        self.layers[0].set_weights(W_i, b_i)
 
         for i, layer in enumerate(self.layers[1:], start=0):
             W_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
