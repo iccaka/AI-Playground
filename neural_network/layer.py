@@ -1,18 +1,14 @@
 import numpy as np
 
-from neural_network.neuron import Neuron
-
 
 class Layer:
     def __init__(self, unit_count, activation='linear', name='_'):
-        self.units = []
-
-        for unit in range(unit_count):
-            self.units.append(Neuron())
-
+        self.W = None
+        self.b = None
         self.unit_count = unit_count
         self.name = name
         self.param_count = 0
+        self.are_weights_initialized = False
 
         # TODO make a dict filled with methods?
         if activation == 'linear':
@@ -33,7 +29,7 @@ class Layer:
     # TODO add Leaky ReLU and PReLU
     @staticmethod
     def linear_transform(_W, _b, A):
-        return np.matmul(A, _W.T) + _b
+        return np.matmul(A, _W.T) + _b.T
 
     def linear(self, _Z):
         return _Z
@@ -50,22 +46,29 @@ class Layer:
     def relu(self, _Z):
         return np.maximum(0, _Z)
 
+    # TODO maybe do it with @property?
     def get_weights(self):
-        if self.units[0].W is None and self.units[0].b is None:
+        # TODO add variable to keep track on whether weights are set or not
+        if self.W is None and self.b is None:
             print('The weights are not initialized. Please run build() on your model before calling.')
             return []
 
-        w = np.zeros(shape=(self.unit_count, self.units[0].W.shape[0]))
-        b = np.zeros(shape=(self.unit_count, 1))
-
-        for i, unit in enumerate(self.units):
-            w[i, :], b[i] = unit.get_weights()
-
-        return w, b
+        return self.W, self.b
 
     def set_weights(self, _W, _b):
-        # TODO check if shape matches
-        self.param_count = (_W.shape[1] * self.unit_count) + _b.shape[0]
+        # TODO you are expecting a sequence here
+        if self.are_weights_initialized:
+            if self.W.shape != _W.shape or self.b.shape != _b.shape:
+                raise ValueError('The provided weights\' shapes don\'t match with the existing ones.\n'
+                                 'Expected: w: {} / b: {}'
+                                 'Provided: w: {} / b: {}'.format(
+                                    self.W.shape,
+                                    self.b.shape,
+                                    _W.shape,
+                                    _b.shape
+                                    ))
+        else:
+            self.are_weights_initialized = True
 
-        for i, unit in enumerate(self.units):
-            unit.set_weights(_W[i, :], _b[i])
+        self.W, self.b = _W, _b
+        self.param_count = (_W.shape[1] * self.unit_count) + _b.shape[0]
