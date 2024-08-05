@@ -55,13 +55,13 @@ class Model:
             try:
                 return self.layers[position]
             except Exception:
-                raise ValueError('No layer found at position:', str(position))
+                raise ValueError('No layer found at position: {}'.format(str(position)))
         else:
             for layer in self.layers:
                 if layer.name == name:
                     return layer
 
-            raise ValueError('No layer with such name found:', name)
+            raise ValueError('No layer with such name found: {}'.format(name))
 
     def get_weights(self):
         if not self.are_weights_initialized:
@@ -77,7 +77,21 @@ class Model:
         return weights
 
     def set_weights(self, weights):
-        # TODO check if the new weights' shape match the current ones' shape
+        if self.are_weights_initialized:
+            current_weights = self.get_weights()
+
+            if len(weights) != len(current_weights):
+                raise ValueError('The number of weights provided doesn\'t match with the current ones.\n'
+                                 'Expected: {}\n'
+                                 'Provided: {}'.format(
+                                    len(current_weights),
+                                    len(weights)
+                                    ))
+
+            for i, weight in enumerate(current_weights):
+                if weight.shape != weights[i].shape:
+                    raise ValueError('Weights\' shapes for 1 or more of them don\'t match.')
+
         for i in range(0, len(weights), 2):
             w = weights[i]
             b = weights[i + 1]
@@ -103,25 +117,6 @@ class Model:
     # TODO finish update_weights
     def update_weights(self):
         pass
-
-    # def fit(self, x, y, epochs):
-    #     # TODO vectorized implementation instead of doing it layer by layer
-    #     # TODO check if input dimensions match for forward prop
-    #     # TODO forward prop in a separate function
-    #     # TODO add cache for use during back prop
-    #     # TODO back prop
-    #     if not self.are_weights_initialized:
-    #         self.build(x.shape)
-    #
-    #     for _ in range(epochs):
-    #         A = x
-    #
-    #         for layer in self.layers:
-    #             W, b = layer.get_weights()
-    #             Z = Layer.linear_transform(W, b, A)
-    #             A = layer.activation(Z)
-    #
-    #             self.update_weights()
 
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
