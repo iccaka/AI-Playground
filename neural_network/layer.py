@@ -60,7 +60,7 @@ class Layer:
         if self.are_weights_initialized:
             if self.W.shape != _W.shape or self.b.shape != _b.shape:
                 raise ValueError('The provided weights\' shapes don\'t match with the existing ones.\n'
-                                 'Expected: w: {} / b: {}'
+                                 'Expected: w: {} / b: {}\n'
                                  'Provided: w: {} / b: {}'.format(
                                     self.W.shape,
                                     self.b.shape,
