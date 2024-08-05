@@ -1,5 +1,8 @@
+import sys
+
 import numpy as np
 from typing import Sequence
+from tqdm import trange
 
 from neural_network.layer import Layer
 
@@ -67,9 +70,9 @@ class Model:
         weights = []
 
         for layer in self.layers:
-            w, b = layer.get_weights()
-            weights.append(w)
-            weights.append(b)
+            layer_weights = layer.get_weights()
+            weights.append(layer_weights[0])
+            weights.append(layer_weights[1])
 
         return weights
 
@@ -97,17 +100,39 @@ class Model:
     def configure(self):
         pass
 
+    # TODO finish update_weights
+    def update_weights(self):
+        pass
+
+    # def fit(self, x, y, epochs):
+    #     # TODO vectorized implementation instead of doing it layer by layer
+    #     # TODO check if input dimensions match for forward prop
+    #     # TODO forward prop in a separate function
+    #     # TODO add cache for use during back prop
+    #     # TODO back prop
+    #     if not self.are_weights_initialized:
+    #         self.build(x.shape)
+    #
+    #     for _ in range(epochs):
+    #         A = x
+    #
+    #         for layer in self.layers:
+    #             W, b = layer.get_weights()
+    #             Z = Layer.linear_transform(W, b, A)
+    #             A = layer.activation(Z)
+    #
+    #             self.update_weights()
+
     def fit(self, x, y, epochs):
-        # TODO vectorized implementation instead of doing it layer by layer
-        # TODO check if input dimensions match for forward prop
-        # TODO forward prop in a separate function
-        # TODO add cache for use during back prop
-        # TODO back prop
         if not self.are_weights_initialized:
             self.build(x.shape)
 
-        # A = x
-        # for i in range(epochs):
-        #     for layer in self.layers:
-        #         Z = Layer.linear_transform(*layer.get_weights(), A)
-        #         A = layer.activation(Z)
+        for _ in trange(epochs, desc='Training...', file=sys.stdout):
+            A = x
+
+            for layer in self.layers:
+                W, b = layer.get_weights()
+                Z = Layer.linear_transform(W, b, A)
+                A = layer.activation(Z)
+
+                self.update_weights()
