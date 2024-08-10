@@ -12,6 +12,7 @@ class Model:
         # TODO maybe use dict here for better code in get_layer()
         self.layers = np.array(layers)
         self.are_weights_initialized = False
+        self.cache = None
 
         for i, layer in enumerate(self.layers):
             if layer.name == '_':
@@ -97,16 +98,43 @@ class Model:
             b = weights[i + 1]
             self.layers[int(i / 2)].set_weights(w, b)
 
-    def build(self, input_shape):
-        # TODO add xavier and he initialization
-        W_i = np.random.randn(self.layers[0].unit_count, input_shape[1])
-        b_i = np.random.randn(self.layers[0].unit_count, 1)
-        self.layers[0].set_weights(W_i, b_i)
+    # TODO add both normal and uniform xavier and he initializations
+    def build(self, input_shape, init=None):
+        if init is None:
+            # random initialization
+            W_i = np.random.randn(self.layers[0].unit_count, input_shape[1])
+            b_i = np.random.randn(self.layers[0].unit_count, 1)
+            self.layers[0].set_weights(W_i, b_i)
 
-        for i, layer in enumerate(self.layers[1:], start=0):
-            W_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
-            b_i = np.random.randn(layer.unit_count, 1)
-            layer.set_weights(W_i, b_i)
+            for i, layer in enumerate(self.layers[1:], start=0):
+                W_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
+                b_i = np.random.randn(layer.unit_count, 1)
+                layer.set_weights(W_i, b_i)
+        elif init == 'xavier_uni':
+            W_i = np.random.uniform(
+                low=-(np.sqrt(6) / np.sqrt(input_shape[1] + self.layers[0].unit_count)),
+                high=np.sqrt(6) / np.sqrt(input_shape[1] + self.layers[0].unit_count),
+                size=(self.layers[0].unit_count, input_shape[1])
+            )
+            b_i = np.random.randn(self.layers[0].unit_count, 1)
+            self.layers[0].set_weights(W_i, b_i)
+
+            for i, layer in enumerate(self.layers[1:], start=0):
+                W_i = np.random.uniform(
+                    low=-(np.sqrt(6) / np.sqrt(self.layers[i].unit_count + layer.unit_count)),
+                    high=(np.sqrt(6) / np.sqrt(self.layers[i].unit_count + layer.unit_count)),
+                    size=(layer.unit_count, self.layers[i].unit_count)
+                )
+                b_i = np.random.randn(layer.unit_count, 1)
+                layer.set_weights(W_i, b_i)
+        elif init == 'he_uni':
+            pass
+        elif init == 'xavier_norm':
+            pass
+        elif init == 'he_norm':
+            pass
+        else:
+            raise ValueError('Initialization method not recognized.')
 
         self.are_weights_initialized = True
 
@@ -114,20 +142,39 @@ class Model:
     def configure(self):
         pass
 
-    # TODO finish update_weights
-    def update_weights(self):
+    # TODO finish cost(maybe use conditional log-likelihood cost function from the Glorot paper)
+    def cost(self):
         pass
 
+    # TODO finish forward prop
+    # TODO fill self.cache list with values
+    def _forward_prop(self, input):
+        A = input
+
+        for layer in self.layers:
+            W, b = layer.get_weights()
+            Z = Layer.linear_transform(W, b, A)
+            A = layer.activation(Z)
+
+            self.cache.append(Z)
+
+        return A
+
+    # TODO finish update_weights
+    def _update_weights(self):
+        pass
+
+    # TODO check if input dimensions match for forward prop
+    # TODO forward prop in a separate function
+    # TODO add cache for use during back prop
+    # TODO back prop
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
-            self.build(x.shape)
+            # TODO make this part configurable(maube through configure() ?)
+            self.build(x.shape, init='xavier_uni')
 
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
-            A = x
+            self.cache = [None] * len(self.layers)
 
-            for layer in self.layers:
-                W, b = layer.get_weights()
-                Z = Layer.linear_transform(W, b, A)
-                A = layer.activation(Z)
-
-                self.update_weights()
+            self._forward_prop(x)
+            self._update_weights()
