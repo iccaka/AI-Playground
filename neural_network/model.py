@@ -170,7 +170,7 @@ class Model:
     # TODO back prop
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
-            # TODO make this part configurable(maube through configure() ?)
+            # TODO make this part configurable(maybe through configure() ?)
             self.build(x.shape, init='xavier_uni')
 
         for _ in trange(epochs, desc='Training...', file=sys.stdout):

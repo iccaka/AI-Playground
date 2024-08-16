@@ -46,6 +46,9 @@ class Layer:
     def relu(self, _Z):
         return np.maximum(0, _Z)
 
+    def relu_gradient(self, _Z):
+        pass
+
     # TODO maybe do it with @property?
     def get_weights(self):
         # TODO add variable to keep track on whether weights are set or not
