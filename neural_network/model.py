@@ -98,6 +98,8 @@ class Model:
             b = weights[i + 1]
             self.layers[int(i / 2)].set_weights(w, b)
 
+    # TODO add separate initialization for each layer
+    # TODO maybe treat layer 0 like a Layer (to remove first initialization code part and not good looking enumerate)
     # TODO add both normal and uniform xavier and he initializations
     def build(self, input_shape, init=None):
         if init is None:
@@ -112,27 +114,72 @@ class Model:
                 layer.set_weights(W_i, b_i)
         elif init == 'xavier_uni':
             W_i = np.random.uniform(
-                low=-(np.sqrt(6) / np.sqrt(input_shape[1] + self.layers[0].unit_count)),
-                high=np.sqrt(6) / np.sqrt(input_shape[1] + self.layers[0].unit_count),
+                low=-(np.sqrt(6 / (input_shape[1] + self.layers[0].unit_count))),
+                high=np.sqrt(6 / (input_shape[1] + self.layers[0].unit_count)),
                 size=(self.layers[0].unit_count, input_shape[1])
             )
-            b_i = np.random.randn(self.layers[0].unit_count, 1)
+            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
             self.layers[0].set_weights(W_i, b_i)
 
             for i, layer in enumerate(self.layers[1:], start=0):
                 W_i = np.random.uniform(
-                    low=-(np.sqrt(6) / np.sqrt(self.layers[i].unit_count + layer.unit_count)),
-                    high=(np.sqrt(6) / np.sqrt(self.layers[i].unit_count + layer.unit_count)),
+                    low=-(np.sqrt(6 / (self.layers[i].unit_count + layer.unit_count))),
+                    high=np.sqrt(6 / (self.layers[i].unit_count + layer.unit_count)),
                     size=(layer.unit_count, self.layers[i].unit_count)
                 )
-                b_i = np.random.randn(layer.unit_count, 1)
+                b_i = np.zeros(shape=(layer.unit_count, 1))
                 layer.set_weights(W_i, b_i)
         elif init == 'he_uni':
-            pass
+            W_i = np.random.uniform(
+                low=-(np.sqrt(6 / input_shape[1])),
+                high=np.sqrt(6 / input_shape[1]),
+                size=(self.layers[0].unit_count, input_shape[1])
+            )
+            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
+            self.layers[0].set_weights(W_i, b_i)
+
+            for i, layer in enumerate(self.layers[1:], start=0):
+                W_i = np.random.uniform(
+                    low=-(np.sqrt(6 / self.layers[i].unit_count)),
+                    high=np.sqrt(6 / self.layers[i].unit_count),
+                    size=(layer.unit_count, self.layers[i].unit_count)
+                )
+                b_i = np.zeros(shape=(layer.unit_count, 1))
+                layer.set_weights(W_i, b_i)
         elif init == 'xavier_norm':
-            pass
+            W_i = np.random.normal(
+                loc=0,
+                scale=np.sqrt(2 / (input_shape[1] + self.layers[0].unit_count)),
+                size=(self.layers[0].unit_count, input_shape[1])
+            )
+            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
+            self.layers[0].set_weights(W_i, b_i)
+
+            for i, layer in enumerate(self.layers[1:], start=0):
+                W_i = np.random.normal(
+                    loc=0,
+                    scale=np.sqrt(2 / (self.layers[i].unit_count + layer.unit_count)),
+                    size=(layer.unit_count, self.layers[i].unit_count)
+                )
+                b_i = np.zeros(shape=(layer.unit_count, 1))
+                layer.set_weights(W_i, b_i)
         elif init == 'he_norm':
-            pass
+            W_i = np.random.normal(
+                loc=0,
+                scale=np.sqrt(2 / input_shape[1]),
+                size=(self.layers[0].unit_count, input_shape[1])
+            )
+            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
+            self.layers[0].set_weights(W_i, b_i)
+
+            for i, layer in enumerate(self.layers[1:], start=0):
+                W_i = np.random.normal(
+                    loc=0,
+                    scale=np.sqrt(2 / self.layers[i].unit_count),
+                    size=(layer.unit_count, self.layers[i].unit_count)
+                )
+                b_i = np.zeros(shape=(layer.unit_count, 1))
+                layer.set_weights(W_i, b_i)
         else:
             raise ValueError('Initialization method not recognized.')
 
@@ -171,7 +218,7 @@ class Model:
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
             # TODO make this part configurable(maybe through configure() ?)
-            self.build(x.shape, init='xavier_uni')
+            self.build(x.shape, init='xavier_norm')
 
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
             self.cache = [None] * len(self.layers)
