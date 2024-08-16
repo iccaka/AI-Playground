@@ -18,16 +18,11 @@ if __name__ == '__main__':
     test_X_flatten = test_X.reshape(test_X.shape[0], -1)
 
     model = Model([
-        Layer(25, activation='relu'),
-        Layer(15, activation='relu'),
-        Layer(10, activation='relu'),
-        Layer(2, activation='linear')
+        Layer(128, activation='relu'),
+        Layer(256, activation='relu'),
+        Layer(512, activation='relu'),
+        Layer(10, activation='softmax')
     ])
 
-    model.summary()
     model.fit(train_X_flatten, train_y, epochs=100)
-
-    weights = model.get_weights()
-    for i in range(0, len(weights), 2):
-        print('w:', weights[i].shape, 'b:', weights[i+1].shape)
-        print('=================================')
+    model.summary()
