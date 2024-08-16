@@ -31,23 +31,32 @@ class Layer:
     def linear_transform(_W, _b, A):
         return np.matmul(A, _W.T) + _b.T
 
-    def linear(self, _Z):
+    @staticmethod
+    def linear(_Z):
         return _Z
 
-    def sigmoid(self, _Z):
+    @staticmethod
+    def sigmoid(_Z):
         return 1 / (1 + np.exp(-_Z))
 
-    def tanh(self, _Z):
+    @staticmethod
+    def tanh(_Z):
         return (np.exp(_Z) - np.exp(-_Z)) / (np.exp(_Z) + np.exp(-_Z))
 
-    def softmax(self, _Z):
+    @staticmethod
+    def softmax(_Z):
         return np.exp(_Z) / np.sum(np.exp(_Z))
 
-    def relu(self, _Z):
+    @staticmethod
+    def relu(_Z):
         return np.maximum(0, _Z)
 
-    def relu_gradient(self, _Z):
-        pass
+    @staticmethod
+    def relu_gradient(_Z: np.ndarray) -> np.ndarray:
+        if not isinstance(_Z, np.ndarray):
+            raise TypeError('Input must be a numpy array.')
+
+        return np.where(_Z <= 0, 0, 1)
 
     # TODO maybe do it with @property?
     def get_weights(self):
