@@ -1,5 +1,4 @@
 import sys
-
 import numpy as np
 from typing import Sequence
 from tqdm import trange
@@ -30,12 +29,12 @@ class Model:
                 print('Name: {} / Units: {} / Activation: {}\n'
                       '\t# of params: {}\n'
                       '\tw: {} / b: {}'.format(
-                        layer.name,
-                        layer.unit_count,
-                        layer.activation.__name__,
-                        layer.param_count,
-                        weights[i].shape,
-                        weights[i + 1].shape
+                    layer.name,
+                    layer.unit_count,
+                    layer.activation.__name__,
+                    layer.param_count,
+                    weights[i].shape,
+                    weights[i + 1].shape
                 ))
 
             print('=================================================================\n'
@@ -85,9 +84,9 @@ class Model:
                 raise ValueError('The number of weights provided doesn\'t match with the current ones.\n'
                                  'Expected: {}\n'
                                  'Provided: {}'.format(
-                                    len(current_weights),
-                                    len(weights)
-                                    ))
+                    len(current_weights),
+                    len(weights)
+                ))
 
             for i, weight in enumerate(current_weights):
                 if weight.shape != weights[i].shape:
@@ -100,7 +99,6 @@ class Model:
 
     # TODO add separate initialization for each layer
     # TODO maybe treat layer 0 like a Layer (to remove first initialization code part and not good looking enumerate)
-    # TODO add both normal and uniform xavier and he initializations
     def build(self, input_shape, init=None):
         if init is None:
             # random initialization
