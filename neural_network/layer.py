@@ -1,3 +1,6 @@
+from typing import Tuple
+from typing import List
+
 import numpy as np
 
 
@@ -26,7 +29,7 @@ class Layer:
 
     # TODO move function definitions to a separate class/file?
     # TODO derivative calculation in a separate class/file?
-    # TODO add Leaky ReLU and PReLU
+    # TODO add PReLU
     @staticmethod
     def linear_transform(_W, _b, A):
         return np.matmul(A, _W.T) + _b.T
@@ -36,39 +39,82 @@ class Layer:
         return _Z
 
     @staticmethod
-    def sigmoid(_Z):
+    def sigmoid(_Z: np.ndarray) -> np.ndarray:
+        if not isinstance(_Z, np.ndarray):
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(_Z)))
+
         return 1 / (1 + np.exp(-_Z))
 
     @staticmethod
-    def tanh(_Z):
-        return (np.exp(_Z) - np.exp(-_Z)) / (np.exp(_Z) + np.exp(-_Z))
+    def tanh(_Z: np.ndarray) -> np.ndarray:
+        if not isinstance(_Z, np.ndarray):
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(_Z)))
+
+        e_z = np.exp(_Z)
+        me_z = np.exp(-_Z)
+
+        return (e_z - me_z) / (e_z + me_z)
 
     @staticmethod
-    def softmax(_Z):
-        return np.exp(_Z) / np.sum(np.exp(_Z))
+    def softmax(_Z) -> np.ndarray:
+        e_z = np.exp(_Z)
+
+        return e_z / np.sum(e_z)
 
     @staticmethod
-    def relu(_Z):
+    def relu(_Z) -> np.ndarray:
         return np.maximum(0, _Z)
+
+    # TODO Maybe do something about the alpha(a) values both here and in leaky_relu_gradient().
+    @staticmethod
+    def leaky_relu(_Z: np.ndarray, a=0.01) -> np.ndarray:
+        if not isinstance(_Z, np.ndarray):
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(_Z)))
+
+        return np.maximum(a * _Z, _Z)
+
+    @staticmethod
+    def sigmoid_gradient(_Z: np.ndarray) -> np.ndarray:
+        s = Layer.sigmoid(_Z)
+
+        return s * (1 - s)
+
+    # TODO Should it be double checked(once already in Layer.tanh) if the type is np.ndarray?
+    @staticmethod
+    def tanh_gradient(_Z: np.ndarray) -> np.ndarray:
+        return 1 - (Layer.tanh(_Z) ** 2)
+
+    @staticmethod
+    def softmax_gradient(_Z) -> np.ndarray:
+        s = Layer.softmax(_Z).reshape(-1, 1)
+
+        return np.diagflat(s) - np.dot(s, s.T)
 
     @staticmethod
     def relu_gradient(_Z: np.ndarray) -> np.ndarray:
         if not isinstance(_Z, np.ndarray):
-            raise TypeError('Input must be a numpy array.')
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(_Z)))
 
         return np.where(_Z <= 0, 0, 1)
 
+    # TODO Maybe do something about the alpha(a) values both here and in leaky_relu().
+    @staticmethod
+    def leaky_relu_gradient(_Z: np.ndarray, a=0.01) -> np.ndarray:
+        if not isinstance(_Z, np.ndarray):
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(_Z)))
+
+        return np.where(_Z <= 0, a, 1)
+
     # TODO maybe do it with @property?
-    def get_weights(self):
-        # TODO add variable to keep track on whether weights are set or not
-        if self.W is None and self.b is None:
-            print('The weights are not initialized. Please run build() on your model before calling.')
+    def get_weights(self) -> Tuple[np.ndarray, np.ndarray] | List:
+        if not self.are_weights_initialized:
+            print('The weights are not yet initialized. '
+                  'Please run either fit() or build() on your model before calling.')
             return []
 
         return self.W, self.b
 
-    def set_weights(self, _W, _b):
-        # TODO you are expecting a sequence here
+    def set_weights(self, _W: np.ndarray, _b: np.ndarray):
         if self.are_weights_initialized:
             if self.W.shape != _W.shape or self.b.shape != _b.shape:
                 raise ValueError('The provided weights\' shapes don\'t match with the existing ones.\n'
