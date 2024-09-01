@@ -13,6 +13,9 @@ class Model:
         self.are_weights_initialized = False
         self.cache = None
 
+        self.optimizer = None
+        self.cost = None
+
         for i, layer in enumerate(self.layers):
             if layer.name == '_':
                 layer.name = 'layer_{}'.format(str(i + 1))
@@ -97,7 +100,8 @@ class Model:
             b = weights[i + 1]
             self.layers[int(i / 2)].set_weights(w, b)
 
-    # TODO add separate initialization for each layer
+    # TODO clean up code inside this method
+    # TODO add separate initialization for each layer ---> !!!
     # TODO maybe treat layer 0 like a Layer (to remove first initialization code part and not good looking enumerate)
     def build(self, input_shape, init=None):
         if init is None:
@@ -183,14 +187,44 @@ class Model:
 
         self.are_weights_initialized = True
 
-    # TODO finish configure
-    def configure(self):
-        pass
+    # TODO should you print the expected values if the incorrect one is passed?
+    # TODO finish configure(equal to tf's compile)
+    def configure(self, optimizer, cost):
+        if optimizer is None and cost is None:
+            raise ValueError('The passed arguments are both None. Please specify appropriate values.')
 
+        if optimizer == 'adam':
+            self.optimizer = 'adam'
+        elif optimizer == 'sgd':
+            self.optimizer = 'sgd'
+        elif optimizer == 'rmsprop':
+            self.optimizer = 'rmsprop'
+        else:
+            self.optimizer = None
+            raise ValueError('No such optimizer. An optimizer won\'t be used.')
+
+        if cost == 'categorical_crossentropy':
+            self.cost = 'categorical_crossentropy'
+        elif cost == 'binary_crossentropy':
+            self.cost = 'binary_crossentropy'
+        elif cost == 'mean_squared_error':
+            self.cost = 'mean_squared_error'
+        else:
+            raise ValueError('No such cost function.')
+
+    # TODO classes_num shouldn't be computed this way(maybe)
     # TODO finish cost(maybe use conditional log-likelihood cost function from the Glorot paper)
-    def cost(self):
-        pass
+    def compute_cost(self, x, y, predictions):
+        result = 0
+        classes_num = len(np.unique(y))
 
+        for i, example in enumerate(x):
+            for j in range(classes_num):
+                result += y[i] * np.log(predictions[i])
+
+        return result * (-1 * x.shape[0])
+
+    # TODO shouldn't self.cache be a local variable here?
     # TODO finish forward prop
     # TODO fill self.cache list with values
     def _forward_prop(self, input):
@@ -206,12 +240,11 @@ class Model:
         return A
 
     # TODO finish update_weights
-    def _update_weights(self):
+    def _update_weights(self, cost):
         pass
 
+    # TODO add batch size
     # TODO check if input dimensions match for forward prop
-    # TODO forward prop in a separate function
-    # TODO add cache for use during back prop
     # TODO back prop
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
@@ -221,5 +254,6 @@ class Model:
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
             self.cache = [None] * len(self.layers)
 
-            self._forward_prop(x)
-            self._update_weights()
+            predicitons = self._forward_prop(x)
+            cost = self.compute_cost(x, y, predicitons)
+            self._update_weights(cost)
