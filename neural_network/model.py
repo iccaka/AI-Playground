@@ -201,7 +201,8 @@ class Model:
             self.optimizer = 'rmsprop'
         else:
             self.optimizer = None
-            raise ValueError('No such optimizer. An optimizer won\'t be used.')
+            # raise ValueError('No such optimizer. An optimizer won\'t be used.')
+            print('No such optimizer. An optimizer won\'t be used.')
 
         if cost == 'categorical_crossentropy':
             self.cost = 'categorical_crossentropy'
@@ -226,7 +227,6 @@ class Model:
 
     # TODO shouldn't self.cache be a local variable here?
     # TODO finish forward prop
-    # TODO fill self.cache list with values
     def _forward_prop(self, input):
         A = input
 
@@ -244,12 +244,21 @@ class Model:
         pass
 
     # TODO add batch size
-    # TODO check if input dimensions match for forward prop
     # TODO back prop
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
             # TODO make this part configurable(maybe through configure() ?)
             self.build(x.shape, init='xavier_norm')
+        else:
+            expected = self.layers[0].get_weights()[0].shape[1]
+
+            if x.shape[1] != expected:
+                raise ValueError('Training data\'s shape doesn\'t match that of the 1st layer\'s weights\' shape.\n'
+                                 'Expected: (x, {})\n'
+                                 'Provided: {}, where \'x\' = training examples.'.format(
+                                    expected,
+                                    x.shape
+                                    ))
 
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
             self.cache = [None] * len(self.layers)
