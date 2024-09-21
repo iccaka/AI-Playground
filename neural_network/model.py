@@ -8,14 +8,19 @@ from neural_network.layer import Layer
 
 class Model:
     def __init__(self, layers: Sequence[Layer]):
-        # TODO maybe use dict here for better code in get_layer()
+        # TODO initialize the weights here for each layer using corresponding passed argument
         self.layers = np.array(layers)
+
+        if self.layers[0].input_shape is None:
+            raise ValueError('You must specify the input shape in the first layer.')
+
         self.are_weights_initialized = False
         self.cache = None
 
         self.optimizer = None
         self.cost = None
 
+        # TODO move this cycle elsewhere
         for i, layer in enumerate(self.layers):
             if layer.name == '_':
                 layer.name = 'layer_{}'.format(str(i + 1))
@@ -103,87 +108,23 @@ class Model:
     # TODO clean up code inside this method
     # TODO add separate initialization for each layer ---> !!!
     # TODO maybe treat layer 0 like a Layer (to remove first initialization code part and not good looking enumerate)
-    def build(self, input_shape, init=None):
-        if init is None:
-            # random initialization
-            W_i = np.random.randn(self.layers[0].unit_count, input_shape[1])
-            b_i = np.random.randn(self.layers[0].unit_count, 1)
-            self.layers[0].set_weights(W_i, b_i)
+    def build(self):
+        for i, layer in enumerate(self.layers):
+            # layer.initialize_weights(
+            #     shape=(layer.unit_count, layer.input_shape[1]) if i == 0
+            #     else (layer.unit_count, self.layers[i - 1].unit_count),
+            #     prev_unit_count=layer.input_shape[1] if i == 0
+            #     else self.layers[i - 1].unit_count
+            # )
 
-            for i, layer in enumerate(self.layers[1:], start=0):
-                W_i = np.random.randn(layer.unit_count, self.layers[i].unit_count)
-                b_i = np.random.randn(layer.unit_count, 1)
-                layer.set_weights(W_i, b_i)
-        elif init == 'xavier_uni':
-            W_i = np.random.uniform(
-                low=-(np.sqrt(6 / (input_shape[1] + self.layers[0].unit_count))),
-                high=np.sqrt(6 / (input_shape[1] + self.layers[0].unit_count)),
-                size=(self.layers[0].unit_count, input_shape[1])
-            )
-            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
-            self.layers[0].set_weights(W_i, b_i)
-
-            for i, layer in enumerate(self.layers[1:], start=0):
-                W_i = np.random.uniform(
-                    low=-(np.sqrt(6 / (self.layers[i].unit_count + layer.unit_count))),
-                    high=np.sqrt(6 / (self.layers[i].unit_count + layer.unit_count)),
-                    size=(layer.unit_count, self.layers[i].unit_count)
-                )
-                b_i = np.zeros(shape=(layer.unit_count, 1))
-                layer.set_weights(W_i, b_i)
-        elif init == 'he_uni':
-            W_i = np.random.uniform(
-                low=-(np.sqrt(6 / input_shape[1])),
-                high=np.sqrt(6 / input_shape[1]),
-                size=(self.layers[0].unit_count, input_shape[1])
-            )
-            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
-            self.layers[0].set_weights(W_i, b_i)
-
-            for i, layer in enumerate(self.layers[1:], start=0):
-                W_i = np.random.uniform(
-                    low=-(np.sqrt(6 / self.layers[i].unit_count)),
-                    high=np.sqrt(6 / self.layers[i].unit_count),
-                    size=(layer.unit_count, self.layers[i].unit_count)
-                )
-                b_i = np.zeros(shape=(layer.unit_count, 1))
-                layer.set_weights(W_i, b_i)
-        elif init == 'xavier_norm':
-            W_i = np.random.normal(
-                loc=0,
-                scale=np.sqrt(2 / (input_shape[1] + self.layers[0].unit_count)),
-                size=(self.layers[0].unit_count, input_shape[1])
-            )
-            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
-            self.layers[0].set_weights(W_i, b_i)
-
-            for i, layer in enumerate(self.layers[1:], start=0):
-                W_i = np.random.normal(
-                    loc=0,
-                    scale=np.sqrt(2 / (self.layers[i].unit_count + layer.unit_count)),
-                    size=(layer.unit_count, self.layers[i].unit_count)
-                )
-                b_i = np.zeros(shape=(layer.unit_count, 1))
-                layer.set_weights(W_i, b_i)
-        elif init == 'he_norm':
-            W_i = np.random.normal(
-                loc=0,
-                scale=np.sqrt(2 / input_shape[1]),
-                size=(self.layers[0].unit_count, input_shape[1])
-            )
-            b_i = np.zeros(shape=(self.layers[0].unit_count, 1))
-            self.layers[0].set_weights(W_i, b_i)
-
-            for i, layer in enumerate(self.layers[1:], start=0):
-                W_i = np.random.normal(
-                    loc=0,
-                    scale=np.sqrt(2 / self.layers[i].unit_count),
-                    size=(layer.unit_count, self.layers[i].unit_count)
-                )
-                b_i = np.zeros(shape=(layer.unit_count, 1))
-                layer.set_weights(W_i, b_i)
-        else:
-            raise ValueError('Initialization method not recognized.')
+            # TODO maybe dont call initialize_weights inside Layer
+            layer.set_weights(*layer.initializer(
+                shape=(layer.unit_count, layer.input_shape[1]) if i == 0
+                    else (layer.unit_count, self.layers[i - 1].unit_count),
+                n_in=layer.input_shape[1] if i == 0
+                    else self.layers[i - 1].unit_count,
+                n_out=layer.unit_count
+            ))
 
         self.are_weights_initialized = True
 
@@ -201,9 +142,9 @@ class Model:
             self.optimizer = 'rmsprop'
         else:
             self.optimizer = None
-            # raise ValueError('No such optimizer. An optimizer won\'t be used.')
             print('No such optimizer. An optimizer won\'t be used.')
 
+        # TODO make self.cost point to a method
         if cost == 'categorical_crossentropy':
             self.cost = 'categorical_crossentropy'
         elif cost == 'binary_crossentropy':
@@ -213,6 +154,7 @@ class Model:
         else:
             raise ValueError('No such cost function.')
 
+    # TODO generalize this
     # TODO classes_num shouldn't be computed this way(maybe)
     # TODO finish cost(maybe use conditional log-likelihood cost function from the Glorot paper)
     def compute_cost(self, x, y, predictions):
@@ -231,6 +173,7 @@ class Model:
         A = input
 
         for layer in self.layers:
+            # TODO unpack w and b directly into linear_transform
             W, b = layer.get_weights()
             Z = Layer.linear_transform(W, b, A)
             A = layer.activation(Z)
@@ -247,8 +190,7 @@ class Model:
     # TODO back prop
     def fit(self, x, y, epochs):
         if not self.are_weights_initialized:
-            # TODO make this part configurable(maybe through configure() ?)
-            self.build(x.shape, init='xavier_norm')
+            self.build()
         else:
             expected = self.layers[0].get_weights()[0].shape[1]
 
@@ -256,10 +198,11 @@ class Model:
                 raise ValueError('Training data\'s shape doesn\'t match that of the 1st layer\'s weights\' shape.\n'
                                  'Expected: (x, {})\n'
                                  'Provided: {}, where \'x\' = training examples.'.format(
-                                    expected,
-                                    x.shape
-                                    ))
+                    expected,
+                    x.shape
+                ))
 
+        # TODO add message after completion of training
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
             self.cache = [None] * len(self.layers)
 
