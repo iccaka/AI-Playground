@@ -3,29 +3,32 @@ import numpy as np
 from typing import Sequence
 from tqdm import trange
 
+from neural_network.emptymodelerror import EmptyModelError
 from neural_network.layer import Layer
 
 
 class Model:
-    def __init__(self, layers: Sequence[Layer]):
+    # TODO add add/remove/replace layer functionality(e.g. when an empty array is passed at first
+    def __init__(self, layers: Sequence[Layer] = []):
         # TODO initialize the weights here for each layer using corresponding passed argument
+        # TODO rearrange them
         self.layers = np.array(layers)
 
-        if self.layers[0].input_shape is None:
-            raise ValueError('You must specify the input shape in the first layer.')
-
         self.are_weights_initialized = False
-        self.cache = None
 
+        # TODO should cache and cost be private?
+        self.cache = None
         self.optimizer = None
+        # TODO should cost be like this?
         self.cost = None
 
-        # TODO move this cycle elsewhere
-        for i, layer in enumerate(self.layers):
-            if layer.name == '_':
-                layer.name = 'layer_{}'.format(str(i + 1))
+        self._update_layer_names()
 
     def summary(self):
+        if len(self.layers) == 0:
+            print('This model doesn\'t have any layers and thus there\'s nothing to be shown.')
+            return
+
         if self.are_weights_initialized:
             weights = self.get_weights()
             total_param_count = 0
@@ -71,6 +74,7 @@ class Model:
 
             raise ValueError('No layer with such name found: {}'.format(name))
 
+    # TODO maybe do it with @property?
     def get_weights(self):
         if not self.are_weights_initialized:
             raise ValueError('Weights are not initialized. To do so run either fit() or build().')
@@ -105,25 +109,22 @@ class Model:
             b = weights[i + 1]
             self.layers[int(i / 2)].set_weights(w, b)
 
-    # TODO clean up code inside this method
-    # TODO add separate initialization for each layer ---> !!!
-    # TODO maybe treat layer 0 like a Layer (to remove first initialization code part and not good looking enumerate)
-    def build(self):
-        for i, layer in enumerate(self.layers):
-            # layer.initialize_weights(
-            #     shape=(layer.unit_count, layer.input_shape[1]) if i == 0
-            #     else (layer.unit_count, self.layers[i - 1].unit_count),
-            #     prev_unit_count=layer.input_shape[1] if i == 0
-            #     else self.layers[i - 1].unit_count
-            # )
+    # TODO check if there are any layers
+    # TODO maybe treat layer 0 like a Layer
+    def build(self, _input_shape=None):
+        if len(self.layers) == 0:
+            raise EmptyModelError('The model cannot be built because no layers have been added.')
 
-            # TODO maybe dont call initialize_weights inside Layer
+        if self.layers[0].input_shape is None:
+            if _input_shape is None:
+                raise ValueError('You must specify the input shape for the first layer.')
+            else:
+                self.layers[0].input_shape = _input_shape
+
+        for i, layer in enumerate(self.layers):
             layer.set_weights(*layer.initializer(
-                shape=(layer.unit_count, layer.input_shape[1]) if i == 0
-                    else (layer.unit_count, self.layers[i - 1].unit_count),
-                n_in=layer.input_shape[1] if i == 0
-                    else self.layers[i - 1].unit_count,
-                n_out=layer.unit_count
+                shape=(layer.unit_count, self.layers[i - 1].unit_count) if i != 0
+                    else (layer.unit_count, layer.input_shape[1])
             ))
 
         self.are_weights_initialized = True
@@ -167,30 +168,14 @@ class Model:
 
         return result * (-1 * x.shape[0])
 
-    # TODO shouldn't self.cache be a local variable here?
-    # TODO finish forward prop
-    def _forward_prop(self, input):
-        A = input
-
-        for layer in self.layers:
-            # TODO unpack w and b directly into linear_transform
-            W, b = layer.get_weights()
-            Z = Layer.linear_transform(W, b, A)
-            A = layer.activation(Z)
-
-            self.cache.append(Z)
-
-        return A
-
-    # TODO finish update_weights
-    def _update_weights(self, cost):
-        pass
-
     # TODO add batch size
     # TODO back prop
     def fit(self, x, y, epochs):
+        if len(self.layers) == 0:
+            raise EmptyModelError('The model cannot be fit because no layers have been added.')
+
         if not self.are_weights_initialized:
-            self.build()
+            self.build(_input_shape=x.shape)
         else:
             expected = self.layers[0].get_weights()[0].shape[1]
 
@@ -209,3 +194,27 @@ class Model:
             predicitons = self._forward_prop(x)
             cost = self.compute_cost(x, y, predicitons)
             self._update_weights(cost)
+
+    def _update_layer_names(self):
+        for i, layer in enumerate(self.layers):
+            if layer.name == '_':
+                layer.name = 'layer_{}'.format(str(i + 1))
+
+    # TODO shouldn't self.cache be a local variable here?
+    # TODO finish forward prop
+    def _forward_prop(self, input):
+        A = input
+
+        for layer in self.layers:
+            # TODO unpack w and b directly into linear_transform
+            W, b = layer.get_weights()
+            Z = Layer.linear_transform(W, b, A)
+            A = layer.activation(Z)
+
+            self.cache.append(Z)
+
+        return A
+
+    # TODO finish update_weights
+    def _update_weights(self, cost):
+        pass
