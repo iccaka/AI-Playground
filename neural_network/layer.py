@@ -7,17 +7,14 @@ from neural_network.initializer import Initializer
 
 
 class Layer:
-    # TODO add initializer that's passed here
-    def __init__(self, unit_count, input_shape=None, activation='linear', name='_', initializer=None):
-        self.W = None
-        self.b = None
+    def __init__(self,
+                 unit_count,
+                 input_shape=None,
+                 activation='linear',
+                 name='_',
+                 initializer: Initializer = Initializer.random):
         self.unit_count = unit_count
         self.input_shape = input_shape
-
-        # TODO @property for name?
-        self.name = name
-        self.param_count = 0
-        self.are_weights_initialized = False
 
         # TODO use dict?
         if activation == 'linear':
@@ -33,18 +30,14 @@ class Layer:
         else:
             raise ValueError('No such activation function.')
 
-        if initializer is None:
-            self.initializer = Initializer.random
-        elif initializer == 'xavier_uni':
-            self.initializer = Initializer.xavier_uni
-        elif initializer == 'he_uni':
-            self.initializer = Initializer.he_uni
-        elif initializer == 'xavier_norm':
-            self.initializer = Initializer.xavier_norm
-        elif initializer == 'he_norm':
-            self.initializer = Initializer.he_norm
-        else:
-            raise ValueError('No such initialization algorithm.')
+        # TODO @property for name?
+        self.name = name
+        self.initializer = initializer
+
+        self.W = None
+        self.b = None
+        self.param_count = 0
+        self.__are_weights_initialized = False
 
     # TODO move function definitions to a separate class/file?
     # TODO derivative calculation in a separate class/file?
@@ -126,7 +119,7 @@ class Layer:
 
     # TODO maybe do it with @property?
     def get_weights(self) -> Tuple[np.ndarray, np.ndarray] | List:
-        if not self.are_weights_initialized:
+        if not self.__are_weights_initialized:
             print('The weights are not yet initialized. '
                   'Please run either fit() or build() on your model before calling.')
             return []
@@ -135,7 +128,7 @@ class Layer:
 
     def set_weights(self, _W: np.ndarray, _b: np.ndarray):
         # TODO check whether this is the 1st layer and if everything matches
-        if self.are_weights_initialized:
+        if self.__are_weights_initialized:
             if self.W.shape != _W.shape or self.b.shape != _b.shape:
                 raise ValueError('The provided weights\' shapes don\'t match with the existing ones.\n'
                                  'Expected: w: {} / b: {}\n'
@@ -146,13 +139,7 @@ class Layer:
                                     _b.shape
                                     ))
         else:
-            self.are_weights_initialized = True
+            self.__are_weights_initialized = True
 
         self.W, self.b = _W, _b
         self.param_count = (_W.shape[1] * self.unit_count) + _b.shape[0]
-
-    # def initialize_weights(self, shape, prev_unit_count=None):
-    #     result = self.initializer(shape, n_out=self.unit_count, n_in=prev_unit_count) if prev_unit_count is None \
-    #         else self.initializer(shape)
-    #     # self.set_weights(*self.initializer(shape, n_out=self.unit_count, n_in=prev_unit_count))
-    #     self.set_weights(result)
