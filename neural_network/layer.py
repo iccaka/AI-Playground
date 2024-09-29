@@ -17,18 +17,23 @@ class Layer:
         self.unit_count = unit_count
         self.input_shape = input_shape
 
-        # TODO assign something to self.grad or smth?
-        # TODO use dict?
+        # TODO keep in mind there's a difference between self and Layer. ... here
+        # TODO use dict? (activations.get?)
         if activation == 'linear':
             self.activation = self.linear
+            self.activation_grad = self.linear_gradient
         elif activation == 'sigmoid':
             self.activation = self.sigmoid
+            self.activation_grad = self.sigmoid_gradient
         elif activation == 'tanh':
             self.activation = self.tanh
+            self.activation_grad = self.tanh_gradient
         elif activation == 'softmax':
             self.activation = self.softmax
+            self.activation_grad = self.softmax_gradient
         elif activation == 'relu':
             self.activation = self.relu
+            self.activation_grad = self.relu_gradient
         else:
             raise ValueError('No such activation function.')
 
@@ -86,6 +91,13 @@ class Layer:
         return np.maximum(a * Z, Z)
 
     @staticmethod
+    def linear_gradient(Z: np.ndarray) -> np.ndarray:
+        if not isinstance(Z, np.ndarray):
+            raise TypeError('Input must be a numpy array. Instead got {}.'.format(type(Z)))
+
+        return np.full(Z.shape, 1, dtype=int)
+
+    @staticmethod
     def sigmoid_gradient(Z: np.ndarray) -> np.ndarray:
         s = Layer.sigmoid(Z)
 
@@ -139,11 +151,11 @@ class Layer:
                 raise ValueError('The provided weights\' shapes don\'t match with the existing ones.\n'
                                  'Expected: w: {} / b: {}\n'
                                  'Provided: w: {} / b: {}'.format(
-                                    self.__W.shape,
-                                    self.__b.shape,
-                                    W.shape,
-                                    b.shape
-                                    )
+                    self.__W.shape,
+                    self.__b.shape,
+                    W.shape,
+                    b.shape
+                )
                 )
         else:
             self.__are_weights_initialized = True
@@ -165,7 +177,6 @@ class Layer:
             raise TypeError('Input must be equal to None or be a tuple. Instead got {}.'.format(type(new_value)))
 
         self._input_shape = new_value
-
 
     @property
     def unit_count(self) -> int:
