@@ -1,19 +1,23 @@
 import sys
 import numpy as np
 from typing import Sequence
+
+from certifi.core import where
 from tqdm import trange
 
 from neural_network.emptymodelerror import EmptyModelError
 from neural_network.layer import Layer
+from neural_network.nolossfunctionerror import NoLossFunctionError
 
 
 # TODO add add/remove/replace layer functionality(e.g. when an empty array is passed at first)
 class Model:
     # TODO validation for optimizer and cost
     def __init__(self, layers: Sequence[Layer] = []):
+        # TODO __cache shouldn't be a field (maybe idk)
         self.__cache = None
         self._optimizer = None
-        self._cost = None
+        self._loss = None
         self.__layers = np.array(layers)
         self.__are_weights_initialized = False
 
@@ -127,50 +131,79 @@ class Model:
 
         self.__are_weights_initialized = True
 
-    # TODO should you print the expected values if the incorrect one is passed?
     # TODO finish configure(equal to tf's compile)
-    def configure(self, optimizer, cost):
-        if optimizer is None and cost is None:
-            raise ValueError('The passed arguments are both None. Please specify appropriate values.')
+    def configure(self, loss, optimizer='rmsprop'):
+        if loss is None:
+            raise ValueError('The loss cannot be empty.')
 
-        if optimizer == 'adam':
-            self._optimizer = 'adam'
+        # TODO maybe make it like it is in tf -> optimizers.get ...
+        if optimizer == 'rmsprop':
+            self._optimizer = optimizer
+        elif optimizer == 'gd':
+            self._optimizer = optimizer
+        elif optimizer == 'adam':
+            self._optimizer = optimizer
         elif optimizer == 'sgd':
-            self._optimizer = 'sgd'
-        elif optimizer == 'rmsprop':
-            self._optimizer = 'rmsprop'
-        else:
-            self._optimizer = None
-            print('No such optimizer. An optimizer won\'t be used.')
+            self._optimizer = optimizer
 
-        # TODO make self.cost point to a method
-        if cost == 'categorical_crossentropy':
-            self._cost = 'categorical_crossentropy'
-        elif cost == 'binary_crossentropy':
-            self._cost = 'binary_crossentropy'
-        elif cost == 'mean_squared_error':
-            self._cost = 'mean_squared_error'
+        # TODO maybe move these methods somewhere else
+        if loss == 'categorical_crossentropy':
+            self._loss = self.categorical_crossentropy
+        elif loss == 'sparse_categorical_crossentropy':
+            self._loss = self.sparse_categorical_crossentropy
+        elif loss == 'binary_crossentropy':
+            self._loss = self.binary_crossentropy
+        elif loss == 'mean_squared_error':
+            self._loss = self.mean_squared_error
         else:
             raise ValueError('No such cost function.')
 
-    # TODO generalize this
-    # TODO classes_num shouldn't be computed this way(maybe)
-    # TODO finish cost(maybe use conditional log-likelihood cost function from the Glorot paper)
+    # TODO vectorized
+    @staticmethod
+    def categorical_crossentropy(C, y, y_hat):
+        # for a single example
+        # for when labels are one-hot encoded
+        result = 0
+
+        for i in range(C):
+            result += y * np.log(y_hat)
+
+        return -result
+
+    # TODO vectorized
+    @staticmethod
+    def sparse_categorical_crossentropy(prediction):
+        # for a single example
+        # for when the labels are integers representing class indices
+        return -np.log(prediction)
+
+    @staticmethod
+    def binary_crossentropy():
+        pass
+
+    @staticmethod
+    def mean_squared_error():
+        pass
+
+    # TODO input checks if necessary
+    # TODO finish compute_cost
     def compute_cost(self, x, y, predictions):
         result = 0
-        classes_num = len(np.unique(y))
 
         for i, example in enumerate(x):
-            for j in range(classes_num):
-                result += y[i] * np.log(predictions[i])
+            result += self._loss(predictions[i])
 
-        return result * (-1 * x.shape[0])
+        return result / len(np.unique(y))
 
+    # TODO check x and y's shapes
     # TODO add batch size
-    # TODO back prop
     def fit(self, x, y, epochs):
         if len(self.__layers) == 0:
             raise EmptyModelError('The model cannot be fit because no layers have been added.')
+
+        if self._loss is None:
+            raise NoLossFunctionError('The model cannot be fit because there\'s no loss function chosen. '
+                                      'To choose one, use configure().')
 
         if not self.__are_weights_initialized:
             self.build(_input_shape=x.shape)
@@ -185,7 +218,6 @@ class Model:
                     x.shape
                 ))
 
-        # TODO add message after completion of training
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
             self.__cache = [None] * len(self.__layers)
 
@@ -193,6 +225,28 @@ class Model:
             cost = self.compute_cost(x, y, predicitons)
             self._update_weights(cost)
 
+        print('Training complete!')
+
+    # TODO finish evaluate
+    def evaluate(self):
+        pass
+
+    # TODO finish predict
+    def predict(self):
+        pass
+
+    @staticmethod
+    def _sparse_categorical_crossentropy_gradient(predictions, y_true):
+        # list comprehension method
+        return [
+            [predictions[i][j] - 1 if j == y_true[i] else predictions[i][j] for j, _ in enumerate(example)]
+                for i, example in enumerate(predictions)
+        ]
+
+        # for i, example in enumerate(predictions):
+        #     for j, _ in enumerate(example):
+        #         if j == y_true[i]:
+        #             predictions[i][j] -= 1
 
     def _update_layer_names(self):
         for i, layer in enumerate(self.__layers):
@@ -221,5 +275,5 @@ class Model:
         return self._optimizer
 
     @property
-    def cost(self):
-        return self._cost
+    def loss(self):
+        return self._loss
