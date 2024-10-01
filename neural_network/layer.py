@@ -108,11 +108,25 @@ class Layer:
     def tanh_gradient(Z: np.ndarray) -> np.ndarray:
         return 1 - (Layer.tanh(Z) ** 2)
 
+    # @staticmethod
+    # def softmax_gradient(Z) -> np.ndarray:
+    #     s = Layer.softmax(Z).reshape(-1, 1)
+    #
+    #     return np.diagflat(s) - np.dot(s, s.T)
+
     @staticmethod
     def softmax_gradient(Z) -> np.ndarray:
-        s = Layer.softmax(Z).reshape(-1, 1)
+        jacobian_matrix = np.diag(Z).reshape(-1, 1)
 
-        return np.diagflat(s) - np.dot(s, s.T)
+        for i in range(len(jacobian_matrix)):
+            for j in range(len(jacobian_matrix)):
+                if i == j:
+                    jacobian_matrix[i][j] = Z[i] * (1 - Z[i])
+                else:
+                    jacobian_matrix[i][j] = -Z[i] * Z[j]
+
+        return jacobian_matrix
+
 
     @staticmethod
     def relu_gradient(Z: np.ndarray) -> np.ndarray:
