@@ -2,7 +2,6 @@ import sys
 import numpy as np
 from typing import Sequence
 
-from certifi.core import where
 from tqdm import trange
 
 from neural_network.emptymodelerror import EmptyModelError
@@ -11,14 +10,18 @@ from neural_network.nolossfunctionerror import NoLossFunctionError
 
 
 # TODO add add/remove/replace layer functionality(e.g. when an empty array is passed at first)
+# TODO add learning rate decay
 class Model:
     # TODO validation for optimizer and cost
     def __init__(self, layers: Sequence[Layer] = []):
         # TODO __cache shouldn't be a field (maybe idk)
-        self.__cache = None
         self._optimizer = None
         self._loss = None
+        self._learning_rate = None
+        self._grad = None
+        # TODO could probably be made like it is in tf -> dict history -> returned after calling fit()
         self.__layers = np.array(layers)
+        self.__cache = None
         self.__are_weights_initialized = False
 
         self._update_layer_names()
@@ -132,10 +135,13 @@ class Model:
         self.__are_weights_initialized = True
 
     # TODO finish configure(equal to tf's compile)
-    def configure(self, loss, optimizer='rmsprop'):
+    def configure(self, loss, learning_rate: float = 0.01, optimizer='rmsprop'):
         if loss is None:
             raise ValueError('The loss cannot be empty.')
 
+        self._learning_rate = learning_rate
+
+        # TODO completely change this
         # TODO maybe make it like it is in tf -> optimizers.get ...
         if optimizer == 'rmsprop':
             self._optimizer = optimizer
@@ -151,6 +157,7 @@ class Model:
             self._loss = self.categorical_crossentropy
         elif loss == 'sparse_categorical_crossentropy':
             self._loss = self.sparse_categorical_crossentropy
+            self._grad = self._sparse_categorical_crossentropy_gradient
         elif loss == 'binary_crossentropy':
             self._loss = self.binary_crossentropy
         elif loss == 'mean_squared_error':
@@ -170,13 +177,13 @@ class Model:
 
         return -result
 
-    # TODO vectorized
     @staticmethod
-    def sparse_categorical_crossentropy(prediction):
+    def sparse_categorical_crossentropy(predictions, y):
         # for a single example
         # for when the labels are integers representing class indices
-        return -np.log(prediction)
+        return -np.log(predictions[y])
 
+    # or just cross-entropy
     @staticmethod
     def binary_crossentropy():
         pass
@@ -188,15 +195,18 @@ class Model:
     # TODO input checks if necessary
     # TODO finish compute_cost
     def compute_cost(self, x, y, predictions):
-        result = 0
+        # result = 0
+        #
+        # for i, example in enumerate(x):
+        #     a = self._loss(predictions[i])
+        #     result += a
+        #
+        # return result / len(np.unique(y))
 
-        for i, example in enumerate(x):
-            result += self._loss(predictions[i])
-
-        return result / len(np.unique(y))
+        return (1 / predictions.shape[0]) * np.sum(self._loss(predictions, y))
 
     # TODO check x and y's shapes
-    # TODO add batch size
+    # TODO add batch size functionality
     def fit(self, x, y, epochs):
         if len(self.__layers) == 0:
             raise EmptyModelError('The model cannot be fit because no layers have been added.')
@@ -218,14 +228,20 @@ class Model:
                     x.shape
                 ))
 
+        cost_cache = []
+
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
-            self.__cache = [None] * len(self.__layers)
+            # self.__cache = [None] * len(self.__layers)
+            self.__cache = []
 
             predicitons = self._forward_prop(x)
-            cost = self.compute_cost(x, y, predicitons)
-            self._update_weights(cost)
+            cost_cache.append(self.compute_cost(x, y, predicitons))
+            dA = self._grad(predicitons, y)
+            self._update_weights(dA, x, y)
 
         print('Training complete!')
+
+        return cost_cache
 
     # TODO finish evaluate
     def evaluate(self):
@@ -238,10 +254,16 @@ class Model:
     @staticmethod
     def _sparse_categorical_crossentropy_gradient(predictions, y_true):
         # list comprehension method
-        return [
-            [predictions[i][j] - 1 if j == y_true[i] else predictions[i][j] for j, _ in enumerate(example)]
-                for i, example in enumerate(predictions)
-        ]
+        # return [
+        #     [predictions[i][j] - 1 if j == y_true[i] else predictions[i][j] for j, _ in enumerate(example)]
+        #         for i, example in enumerate(predictions)
+        # ]
+
+        m = predictions.shape[0]
+        result = np.copy(predictions)
+        result[np.arange(m), y_true] -= 1
+
+        return result
 
         # for i, example in enumerate(predictions):
         #     for j, _ in enumerate(example):
@@ -259,16 +281,35 @@ class Model:
         A = input
 
         for layer in self.__layers:
-            Z = Layer.linear_transform(*layer.get_weights(), A)
+            layer_W, layer_b = layer.get_weights()
+            Z = Layer.linear_transform(layer_W, layer_b, A)
             A = layer.activation(Z)
+            # TODO add cost cache
+            self.__cache.append([A, Z, layer_W, layer_b])
 
-            self.__cache.append(Z)
-
-        return A
+        return A, Z
 
     # TODO finish update_weights
-    def _update_weights(self, cost):
-        pass
+    def _update_weights(self, dA, X, y):
+        m = y.shape[0]
+
+        # for i, cache in enumerate(reversed(self.__cache)):
+        for i, cache in reversed(list(enumerate(self.__cache))):
+            A = dA
+            curr_layer = self.get_layer(position=i)
+
+            dZ = A * curr_layer.activation_grad(A)
+            dW = (1 / m) * np.dot(dZ, self.__cache[i - 1][0] if (i - 1) != 0 else X.T)
+            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
+            dA = self.__cache[2].T * dZ
+
+            curr_layer.set_weights(
+                (self.__cache[2] - self._learning_rate * dW),
+                (self.__cache[3] - self._learning_rate * db)
+            )
+
+            A = dA
+
 
     @property
     def optimizer(self):
