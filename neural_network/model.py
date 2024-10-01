@@ -181,6 +181,7 @@ class Model:
     def sparse_categorical_crossentropy(predictions, y):
         # for a single example
         # for when the labels are integers representing class indices
+        a = -np.log(predictions[y])
         return -np.log(predictions[y])
 
     # or just cross-entropy
@@ -202,8 +203,8 @@ class Model:
         #     result += a
         #
         # return result / len(np.unique(y))
-
-        return (1 / predictions.shape[0]) * np.sum(self._loss(predictions, y))
+        a = (1 / y.shape[0]) * np.sum(self._loss(predictions, y))
+        return (1 / y.shape[0]) * np.sum(self._loss(predictions, y))
 
     # TODO check x and y's shapes
     # TODO add batch size functionality
@@ -234,10 +235,10 @@ class Model:
             # self.__cache = [None] * len(self.__layers)
             self.__cache = []
 
-            predicitons = self._forward_prop(x)
-            cost_cache.append(self.compute_cost(x, y, predicitons))
-            dA = self._grad(predicitons, y)
-            self._update_weights(dA, x, y)
+            predictions = self._forward_prop(x)
+            cost_cache.append(self.compute_cost(x, y, predictions))
+            dA = self._grad(predictions, y)
+            self._update_weights(dA, x)
 
         print('Training complete!')
 
@@ -284,28 +285,43 @@ class Model:
             layer_W, layer_b = layer.get_weights()
             Z = Layer.linear_transform(layer_W, layer_b, A)
             A = layer.activation(Z)
-            # TODO add cost cache
             self.__cache.append([A, Z, layer_W, layer_b])
 
-        return A, Z
+        return A
 
     # TODO finish update_weights
-    def _update_weights(self, dA, X, y):
-        m = y.shape[0]
+    def _update_weights(self, dA, X):
+        m = X.shape[0]
+        A = dA
 
-        # for i, cache in enumerate(reversed(self.__cache)):
         for i, cache in reversed(list(enumerate(self.__cache))):
-            A = dA
             curr_layer = self.get_layer(position=i)
 
-            dZ = A * curr_layer.activation_grad(A)
-            dW = (1 / m) * np.dot(dZ, self.__cache[i - 1][0] if (i - 1) != 0 else X.T)
-            db = (1 / m) * np.sum(dZ, axis=1, keepdims=True)
-            dA = self.__cache[2].T * dZ
+            dZ = A * curr_layer.activation_grad(cache[1])
+            # dZ = A * curr_layer.activation_grad(A)
+            # TODO this line shouldn't be like this
+            dW = (1 / m) * np.dot(dZ.T, self.__cache[i - 1][0] if (i - 1) != -1 else X)
+            db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)
+            dA = np.dot(dZ, cache[2])
+            # dA = cache[2].T * dZ
+            # dA = dZ * cache[2]
+
+            # TODO maybe move everything above in a separate method
+            # curr_layer.set_weights(
+            #     (self.__cache[2] - (self._learning_rate * dW)),
+            #     (self.__cache[3] - (self._learning_rate * db))
+            # )
+
+            # curr_layer.set_weights(
+            #     cache[2] - (self._learning_rate * dW),
+            #     cache[3] - (self._learning_rate * db)
+            # )
+
+            curr_layer_weights = curr_layer.get_weights()
 
             curr_layer.set_weights(
-                (self.__cache[2] - self._learning_rate * dW),
-                (self.__cache[3] - self._learning_rate * db)
+                curr_layer_weights[0] - (self._learning_rate * dW),
+                curr_layer_weights[1] - (self._learning_rate * db.T)
             )
 
             A = dA
