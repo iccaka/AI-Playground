@@ -34,6 +34,9 @@ class Layer:
         elif activation == 'relu':
             self.activation = self.relu
             self.activation_grad = self.relu_gradient
+        elif activation == 'leaky_relu':
+            self.activation = self.leaky_relu
+            self.activation_grad = self.leaky_relu_gradient
         else:
             raise ValueError('No such activation function.')
 
@@ -74,7 +77,7 @@ class Layer:
 
     @staticmethod
     def softmax(Z) -> np.ndarray:
-        e_z = np.exp(Z)
+        e_z = np.exp(Z - Z.max())
 
         return e_z / np.sum(e_z)
 
@@ -108,24 +111,9 @@ class Layer:
     def tanh_gradient(Z: np.ndarray) -> np.ndarray:
         return 1 - (Layer.tanh(Z) ** 2)
 
-    # @staticmethod
-    # def softmax_gradient(Z) -> np.ndarray:
-    #     s = Layer.softmax(Z).reshape(-1, 1)
-    #
-    #     return np.diagflat(s) - np.dot(s, s.T)
-
     @staticmethod
     def softmax_gradient(Z) -> np.ndarray:
-        jacobian_matrix = np.diag(Z).reshape(-1, 1)
-
-        for i in range(len(jacobian_matrix)):
-            for j in range(len(jacobian_matrix)):
-                if i == j:
-                    jacobian_matrix[i][j] = Z[i] * (1 - Z[i])
-                else:
-                    jacobian_matrix[i][j] = -Z[i] * Z[j]
-
-        return jacobian_matrix
+        pass
 
 
     @staticmethod
