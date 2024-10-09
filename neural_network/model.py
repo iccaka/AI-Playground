@@ -129,7 +129,7 @@ class Model:
         for i, layer in enumerate(self.__layers):
             layer.set_weights(*layer.initializer(
                 shape=(layer.unit_count, self.__layers[i - 1].unit_count) if i != 0
-                    else (layer.unit_count, layer.input_shape[1])
+                else (layer.unit_count, layer.input_shape[1])
             ))
 
         self.__are_weights_initialized = True
@@ -162,27 +162,25 @@ class Model:
             self._loss = self.binary_crossentropy
         elif loss == 'mean_squared_error':
             self._loss = self.mean_squared_error
+            self._grad = self._mean_squared_error_gradient
+        elif loss == 'mean_absolute_error':
+            self._loss = self.mean_absolute_error
         else:
             raise ValueError('No such cost function.')
 
     # TODO vectorized
     @staticmethod
-    def categorical_crossentropy(C, y, y_hat):
-        # for a single example
+    def categorical_crossentropy(y, y_hat):
         # for when labels are one-hot encoded
-        result = 0
 
-        for i in range(C):
-            result += y * np.log(y_hat)
-
-        return -result
+        return (-1 / y.shape[0]) * np.sum(y_hat * np.log(y) + (1 - y_hat) * np.log(1 - y))
 
     @staticmethod
     def sparse_categorical_crossentropy(predictions, y):
-        # for a single example
         # for when the labels are integers representing class indices
-        a = -np.log(predictions[y])
-        return -np.log(predictions[y])
+
+        return np.mean(-np.log(predictions[np.arange(y.shape[0]), y]))
+        # return -np.log(predictions[y])
 
     # or just cross-entropy
     @staticmethod
@@ -190,25 +188,16 @@ class Model:
         pass
 
     @staticmethod
-    def mean_squared_error():
-        pass
+    def mean_squared_error(predictions, y):
+        return (1 / y.shape[0]) * np.sum((y - predictions) ** 2)
 
-    # TODO input checks if necessary
-    # TODO finish compute_cost
-    def compute_cost(self, x, y, predictions):
-        # result = 0
-        #
-        # for i, example in enumerate(x):
-        #     a = self._loss(predictions[i])
-        #     result += a
-        #
-        # return result / len(np.unique(y))
-        a = (1 / y.shape[0]) * np.sum(self._loss(predictions, y))
-        return (1 / y.shape[0]) * np.sum(self._loss(predictions, y))
+    @staticmethod
+    def mean_absolute_error():
+        pass
 
     # TODO check x and y's shapes
     # TODO add batch size functionality
-    def fit(self, x, y, epochs):
+    def fit(self, X, y, epochs):
         if len(self.__layers) == 0:
             raise EmptyModelError('The model cannot be fit because no layers have been added.')
 
@@ -217,28 +206,28 @@ class Model:
                                       'To choose one, use configure().')
 
         if not self.__are_weights_initialized:
-            self.build(_input_shape=x.shape)
+            self.build(_input_shape=X.shape)
         else:
             expected = self.__layers[0].get_weights()[0].shape[1]
 
-            if x.shape[1] != expected:
+            if X.shape[1] != expected:
                 raise ValueError('Training data\'s shape doesn\'t match that of the 1st layer\'s weights\' shape.\n'
                                  'Expected: (x, {})\n'
                                  'Provided: {}, where \'x\' = training examples.'.format(
                     expected,
-                    x.shape
+                    X.shape
                 ))
 
         cost_cache = []
 
         for _ in trange(epochs, desc='Training...', file=sys.stdout):
-            # self.__cache = [None] * len(self.__layers)
             self.__cache = []
 
-            predictions = self._forward_prop(x)
-            cost_cache.append(self.compute_cost(x, y, predictions))
-            dA = self._grad(predictions, y)
-            self._update_weights(dA, x)
+            predictions = self._forward_prop(X)
+            cost_cache.append(self._loss(predictions, y))
+            # dA = self._grad(X, predictions, y)
+            dA = predictions - y.reshape(-1, 1)
+            self._update_weights(dA, X)
 
         print('Training complete!')
 
@@ -260,24 +249,20 @@ class Model:
         #         for i, example in enumerate(predictions)
         # ]
 
-        m = predictions.shape[0]
         result = np.copy(predictions)
-        result[np.arange(m), y_true] -= 1
+        result[np.arange(predictions.shape[0]), y_true] -= 1
 
         return result
 
-        # for i, example in enumerate(predictions):
-        #     for j, _ in enumerate(example):
-        #         if j == y_true[i]:
-        #             predictions[i][j] -= 1
+    @staticmethod
+    def _mean_squared_error_gradient(X, predictions, y_true):
+        return (1 / y_true.shape[0]) * np.sum(np.matmul((y_true - predictions), X))
 
     def _update_layer_names(self):
         for i, layer in enumerate(self.__layers):
             if layer.name == '_':
                 layer.name = 'layer_{}'.format(str(i + 1))
 
-    # TODO shouldn't self.cache be a local variable here?
-    # TODO finish forward prop
     def _forward_prop(self, input):
         A = input
 
@@ -289,7 +274,6 @@ class Model:
 
         return A
 
-    # TODO finish update_weights
     def _update_weights(self, dA, X):
         m = X.shape[0]
         A = dA
@@ -298,34 +282,16 @@ class Model:
             curr_layer = self.get_layer(position=i)
 
             dZ = A * curr_layer.activation_grad(cache[1])
-            # dZ = A * curr_layer.activation_grad(A)
-            # TODO this line shouldn't be like this
             dW = (1 / m) * np.dot(dZ.T, self.__cache[i - 1][0] if (i - 1) != -1 else X)
             db = (1 / m) * np.sum(dZ, axis=0, keepdims=True)
             dA = np.dot(dZ, cache[2])
-            # dA = cache[2].T * dZ
-            # dA = dZ * cache[2]
-
-            # TODO maybe move everything above in a separate method
-            # curr_layer.set_weights(
-            #     (self.__cache[2] - (self._learning_rate * dW)),
-            #     (self.__cache[3] - (self._learning_rate * db))
-            # )
-
-            # curr_layer.set_weights(
-            #     cache[2] - (self._learning_rate * dW),
-            #     cache[3] - (self._learning_rate * db)
-            # )
-
-            curr_layer_weights = curr_layer.get_weights()
 
             curr_layer.set_weights(
-                curr_layer_weights[0] - (self._learning_rate * dW),
-                curr_layer_weights[1] - (self._learning_rate * db.T)
+                cache[2] - (self._learning_rate * dW),
+                cache[3] - (self._learning_rate * db.T)
             )
 
             A = dA
-
 
     @property
     def optimizer(self):
